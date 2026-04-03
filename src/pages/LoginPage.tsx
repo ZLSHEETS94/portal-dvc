@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../services/AuthService';
 import { LOGO_URL } from '../types';
@@ -13,6 +13,21 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const user = await AuthService.handleRedirectResult();
+        if (user) {
+          navigate('/dashboard');
+        }
+      } catch (err: any) {
+        console.error('Redirect result error:', err);
+        setError(`Erro no login: ${err.message || 'Erro desconhecido'}`);
+      }
+    };
+    checkRedirect();
+  }, [navigate]);
 
   const getFriendlyErrorMessage = (code: string) => {
     switch (code) {

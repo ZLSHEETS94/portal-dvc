@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../services/AuthService';
 import { LOGO_URL } from '../types';
@@ -12,6 +12,21 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const user = await AuthService.handleRedirectResult();
+        if (user) {
+          navigate('/dashboard');
+        }
+      } catch (err: any) {
+        console.error('Redirect result error:', err);
+        setError(`Erro no login: ${err.message || 'Erro desconhecido'}`);
+      }
+    };
+    checkRedirect();
+  }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

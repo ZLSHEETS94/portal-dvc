@@ -4,6 +4,8 @@ import {
   signOut, 
   sendPasswordResetEmail, 
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   User
 } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
@@ -31,17 +33,41 @@ export class AuthService {
   }
 
   static async loginWithGoogle() {
-    const credential = await signInWithPopup(auth, googleProvider);
-    const user = credential.user;
-    
-    await FirestoreService.saveUserProfile({
-      uid: user.uid,
-      displayName: user.displayName || "",
-      email: user.email || "",
-      photoURL: user.photoURL || DEFAULT_AVATAR,
-    });
-    
-    return user;
+    try {
+      const credential = await signInWithPopup(auth, googleProvider);
+      const user = credential.user;
+      
+      await FirestoreService.saveUserProfile({
+        uid: user.uid,
+        displayName: user.displayName || "",
+        email: user.email || "",
+        photoURL: user.photoURL || DEFAULT_AVATAR,
+      });
+      
+      return user;
+    } catch (error: any) {
+      // If popup is blocked or COOP error occurs, try redirect
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request' || error.message?.includes('Cross-Origin-Opener-Policy')) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  static async handleRedirectResult() {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      const user = result.user;
+      await FirestoreService.saveUserProfile({
+        uid: user.uid,
+        displayName: user.displayName || "",
+        email: user.email || "",
+        photoURL: user.photoURL || DEFAULT_AVATAR,
+      });
+      return user;
+    }
+    return null;
   }
 
   static async logout() {
