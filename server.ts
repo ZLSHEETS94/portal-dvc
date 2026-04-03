@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,7 +12,7 @@ async function startServer() {
   const PORT = 3000;
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" || !fs.existsSync(path.join(process.cwd(), 'dist'))) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
