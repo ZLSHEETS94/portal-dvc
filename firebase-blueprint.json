@@ -1,0 +1,35 @@
+{
+  "entities": {
+    "UserProgress": {
+      "title": "User Progress",
+      "description": "Tracks completed posts per user and group.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who completed the post."
+        },
+        "groupId": {
+          "type": "string",
+          "description": "The ID of the group the post belongs to."
+        },
+        "postId": {
+          "type": "string",
+          "description": "The ID of the completed post."
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the post was marked as completed."
+        }
+      },
+      "required": ["userId", "groupId", "postId", "completedAt"]
+    }
+  },
+  "firestore": {
+    "/user_progress/{progressId}": {
+      "schema": "UserProgress",
+      "description": "Collection of user progress records."
+    }
+  }
+}

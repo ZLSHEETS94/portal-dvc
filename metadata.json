@@ -1,0 +1,7 @@
+{
+  "name": "Portal Devocional",
+  "description": "Um portal moderno e minimalista para gestão devocional, com autenticação Firebase e perfil de usuário.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

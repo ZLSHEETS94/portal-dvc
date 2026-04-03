@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      // Users can only read and write their own data
+      allow read: if isOwner(userId);
+      
+      // Validation for user profile
+      allow create: if isOwner(userId) && 
+        request.resource.data.keys().hasAll(['uid', 'email', 'displayName', 'status', 'plan']) &&
+        request.resource.data.uid == request.auth.uid;
+        
+      allow update: if isOwner(userId) && 
+        // Prevent changing critical fields by non-admins if needed, 
+        // but here we allow the user to update their own profile fields.
+        // We ensure uid and email remain unchanged for security.
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.email == resource.data.email;
+    }
+    
+    // Group Rules
+    match /groups/{groupId} {
+      // Users can read if they are the leader or a member
+      allow read: if isAuthenticated() && (
+        resource.data.liderId == request.auth.uid || 
+        request.auth.uid in resource.data.membros
+      );
+      
+      // Only authenticated users can create groups
+      allow create: if isAuthenticated() && 
+        request.resource.data.liderId == request.auth.uid &&
+        request.resource.data.membros.size() == 1 &&
+        request.resource.data.membros[0] == request.auth.uid;
+        
+      // Only the leader can update or delete, EXCEPT for joining/leaving
+      allow update: if isAuthenticated() && (
+        resource.data.liderId == request.auth.uid ||
+        (
+          // Allow joining: only adding self to membros array
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['membros']) &&
+          request.resource.data.membros.size() == resource.data.membros.size() + 1 &&
+          request.resource.data.membros.hasAll(resource.data.membros) &&
+          request.auth.uid in request.resource.data.membros &&
+          resource.data.status == 'Ativo'
+        ) ||
+        (
+          // Allow leaving: only removing self from membros array
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['membros']) &&
+          request.resource.data.membros.size() == resource.data.membros.size() - 1 &&
+          resource.data.membros.hasAll(request.resource.data.membros) &&
+          !(request.auth.uid in request.resource.data.membros)
+        )
+      );
+      
+      allow delete: if isAuthenticated() && resource.data.liderId == request.auth.uid;
+
+      // Devocionais Sub-collection (Legacy - keeping for compatibility if needed, but moving to calendar_days)
+      match /devocionais/{postId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid ||
+          request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.membros
+        );
+        allow create: if isAuthenticated() && 
+          get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid;
+        allow update, delete: if isAuthenticated() && 
+          get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid;
+      }
+
+      // Calendar Days Sub-collection
+      match /calendar_days/{dayId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid ||
+          request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.membros
+        );
+        allow create: if isAuthenticated() && 
+          get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid;
+        allow update, delete: if isAuthenticated() && 
+          get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid;
+
+        // Posts Sub-collection (within a day)
+        match /posts/{postId} {
+          allow read: if isAuthenticated() && (
+            get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid ||
+            request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.membros
+          );
+          // Any member can create a post
+          allow create: if isAuthenticated() && 
+            request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.membros;
+          // Only author or leader can update/delete
+          allow update, delete: if isAuthenticated() && (
+            resource.data.autor_id == request.auth.uid ||
+            get(/databases/$(database)/documents/groups/$(groupId)).data.liderId == request.auth.uid
+          );
+        }
+      }
+    }
+
+    // User Progress Rules
+    match /user_progress/{progressId} {
+      // Users can only read and write their own progress
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
