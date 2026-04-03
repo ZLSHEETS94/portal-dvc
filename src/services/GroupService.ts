@@ -88,10 +88,11 @@ export class GroupService {
       const groupData = groupDoc.data() as Group;
       if (groupData.status !== "Ativo") throw new Error("Este grupo está inativo");
       if (groupData.membros.includes(user.uid)) throw new Error("Você já faz parte deste grupo");
-      if (groupData.solicitacoes?.includes(user.uid)) throw new Error("Você já enviou uma solicitação para este grupo");
 
+      // Adiciona o usuário diretamente aos membros e remove de solicitações caso existisse
       await updateDoc(doc(db, this.COLLECTION, groupId), {
-        solicitacoes: arrayUnion(user.uid)
+        membros: arrayUnion(user.uid),
+        solicitacoes: arrayRemove(user.uid)
       });
 
       return groupData.nome;
