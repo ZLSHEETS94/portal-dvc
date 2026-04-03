@@ -17,6 +17,7 @@ export interface Group {
   fotoUrl: string;
   liderId: string;
   membros: string[];
+  solicitacoes?: string[]; // UIDs of users requesting to join
   status: "Ativo" | "Inativo";
   createdAt: string;
 }

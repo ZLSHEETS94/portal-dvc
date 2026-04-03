@@ -230,6 +230,114 @@ export class PostService {
     }
   }
 
+  static async getUncompletedPosts(userId: string, limitCount: number = 5): Promise<any[]> {
+    try {
+      const { collectionGroup, query, orderBy, limit, getDocs, where } = await import("firebase/firestore");
+      
+      // 1. Get all posts using collectionGroup
+      const postsQuery = query(
+        collectionGroup(db, "posts"),
+        orderBy("criado_em", "desc"),
+        limit(20) // Get more to filter out completed ones
+      );
+      
+      const postsSnap = await getDocs(postsQuery);
+      
+      // 2. Get user progress
+      const progressSnap = await getDocs(query(
+        collection(db, "user_progress"),
+        where("userId", "==", userId)
+      ));
+      const completedPostIds = new Set(progressSnap.docs.map(d => d.data().postId));
+      
+      // 3. Filter and return
+      const uncompleted = [];
+      for (const doc of postsSnap.docs) {
+        if (!completedPostIds.has(doc.id)) {
+          // We need to know which group this post belongs to for navigation
+          // The path is groups/{groupId}/calendar_days/{dayId}/posts/{postId}
+          const pathSegments = doc.ref.path.split('/');
+          const groupId = pathSegments[1];
+          const dayId = pathSegments[3];
+          
+          uncompleted.push({
+            id: doc.id,
+            groupId,
+            dayId,
+            ...doc.data()
+          });
+        }
+        if (uncompleted.length >= limitCount) break;
+      }
+      
+      return uncompleted;
+    } catch (error) {
+      console.error("Error getting uncompleted posts:", error);
+      return [];
+    }
+  }
+
+  static async getNextPost(groupId: string, currentPostId: string): Promise<{ groupId: string; dayId: string; postId: string } | null> {
+    try {
+      const { collectionGroup, query, orderBy, getDocs, where } = await import("firebase/firestore");
+      
+      // 1. Get all posts in this group
+      // Note: collectionGroup("posts") gets all posts across all groups. 
+      // We filter them by checking if the path contains the groupId.
+      const postsQuery = query(
+        collectionGroup(db, "posts"),
+        orderBy("criado_em", "asc")
+      );
+      
+      const postsSnap = await getDocs(postsQuery);
+      const allPostsInGroup = postsSnap.docs
+        .filter(doc => doc.ref.path.includes(`groups/${groupId}`))
+        .map(doc => {
+          const segments = doc.ref.path.split('/');
+          return {
+            postId: doc.id,
+            dayId: segments[3],
+            groupId: segments[1],
+            criado_em: doc.data().criado_em
+          };
+        });
+
+      const currentIndex = allPostsInGroup.findIndex(p => p.postId === currentPostId);
+      if (currentIndex === -1 || currentIndex === allPostsInGroup.length - 1) return null;
+
+      // Smart logic: find the first uncompleted post after the current one
+      const user = auth.currentUser;
+      if (user) {
+        const progressSnap = await getDocs(query(
+          collection(db, "user_progress"),
+          where("userId", "==", user.uid),
+          where("groupId", "==", groupId)
+        ));
+        const completedPostIds = new Set(progressSnap.docs.map(d => d.data().postId));
+
+        for (let i = currentIndex + 1; i < allPostsInGroup.length; i++) {
+          if (!completedPostIds.has(allPostsInGroup[i].postId)) {
+            return {
+              groupId: allPostsInGroup[i].groupId,
+              dayId: allPostsInGroup[i].dayId,
+              postId: allPostsInGroup[i].postId
+            };
+          }
+        }
+      }
+
+      // If all following are completed, just return the immediate next one
+      const next = allPostsInGroup[currentIndex + 1];
+      return {
+        groupId: next.groupId,
+        dayId: next.dayId,
+        postId: next.postId
+      };
+    } catch (error) {
+      console.error("Error getting next post:", error);
+      return null;
+    }
+  }
   static sharePostToWhatsApp(groupName: string, authorName: string, postTitle: string, postId: string) {
     const currentDate = new Date().toLocaleDateString('pt-BR');
     const origin = window.location.origin;

@@ -4,13 +4,37 @@ import { AuthService } from '../services/AuthService';
 import { LOGO_URL } from '../types';
 import { Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { cn } from '../lib/utils';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isShaking, setIsShaking] = useState(false);
   const navigate = useNavigate();
+
+  const getFriendlyErrorMessage = (code: string) => {
+    switch (code) {
+      case 'auth/user-not-found':
+      case 'auth/invalid-email':
+        return "Não encontramos uma conta com este e-mail. Que tal se cadastrar?";
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return "Ops! A senha parece estar incorreta. Tente novamente.";
+      case 'auth/network-request-failed':
+        return "Problema de conexão. Verifique sua internet.";
+      case 'auth/too-many-requests':
+        return "Muitas tentativas malsucedidas. Tente novamente mais tarde.";
+      default:
+        return "Ocorreu um erro ao tentar entrar. Verifique seus dados.";
+    }
+  };
+
+  const triggerShake = () => {
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 500);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +45,9 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Email ou senha inválidos.');
+      const message = getFriendlyErrorMessage(err.code);
+      setError(message);
+      triggerShake();
     } finally {
       setLoading(false);
     }
@@ -46,7 +72,10 @@ export default function LoginPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 space-y-8"
+        className={cn(
+          "max-w-md w-full bg-white rounded-3xl shadow-xl p-8 space-y-8",
+          isShaking && "animate-shake"
+        )}
       >
         <div className="text-center">
           <img src={LOGO_URL} alt="Portal Devocional" className="h-24 mx-auto mb-4" />

@@ -25,6 +25,8 @@ import AudioRecordingWidget from '../components/AudioRecordingWidget';
 import VideoPlayerWidget from '../components/VideoPlayerWidget';
 import PdfViewerWidget from '../components/PdfViewerWidget';
 import { ProgressService } from '../services/ProgressService';
+import { GroupDetailsSkeleton } from '../components/Skeleton';
+import { Onboarding } from '../components/Onboarding';
 
 export default function GroupDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +43,7 @@ export default function GroupDetailsPage() {
   const [isAddDayModalOpen, setIsAddDayModalOpen] = useState(false);
   const [isAddPostModalOpen, setIsAddPostModalOpen] = useState(false);
   const [filter, setFilter] = useState<'todos' | 'texto' | 'audio' | 'video' | 'pdf'>('todos');
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Statistics Calculation
   const stats = React.useMemo(() => {
@@ -66,6 +69,12 @@ export default function GroupDetailsPage() {
 
   useEffect(() => {
     if (!id) return;
+
+    // Check onboarding
+    const hasSeenOnboarding = localStorage.getItem(`hasSeenOnboarding_${id}`);
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
 
     const unsubGroup = GroupService.subscribeToGroup(id, (data) => {
       if (!data) {
@@ -111,12 +120,17 @@ export default function GroupDetailsPage() {
     return () => unsubPosts();
   }, [id, selectedDayId]);
 
+  const handleCloseOnboarding = () => {
+    if (id) {
+      localStorage.setItem(`hasSeenOnboarding_${id}`, 'true');
+    }
+    setShowOnboarding(false);
+  };
+
   if (loading || !group) {
     return (
       <MainLayout>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-        </div>
+        <GroupDetailsSkeleton />
       </MainLayout>
     );
   }
@@ -556,8 +570,8 @@ export default function GroupDetailsPage() {
         </div>
       </div>
 
-      {/* Modals */}
       <AnimatePresence>
+        {showOnboarding && <Onboarding onClose={handleCloseOnboarding} />}
         {isInviteModalOpen && (
           <InviteModal 
             groupId={group.id} 

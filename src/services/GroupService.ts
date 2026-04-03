@@ -88,15 +88,37 @@ export class GroupService {
       const groupData = groupDoc.data() as Group;
       if (groupData.status !== "Ativo") throw new Error("Este grupo está inativo");
       if (groupData.membros.includes(user.uid)) throw new Error("Você já faz parte deste grupo");
+      if (groupData.solicitacoes?.includes(user.uid)) throw new Error("Você já enviou uma solicitação para este grupo");
 
       await updateDoc(doc(db, this.COLLECTION, groupId), {
-        membros: arrayUnion(user.uid)
+        solicitacoes: arrayUnion(user.uid)
       });
 
       return groupData.nome;
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `${this.COLLECTION}/${groupId}`);
       throw error;
+    }
+  }
+
+  static async approveRequest(groupId: string, userUid: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, this.COLLECTION, groupId), {
+        membros: arrayUnion(userUid),
+        solicitacoes: arrayRemove(userUid)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `${this.COLLECTION}/${groupId}`);
+    }
+  }
+
+  static async rejectRequest(groupId: string, userUid: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, this.COLLECTION, groupId), {
+        solicitacoes: arrayRemove(userUid)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `${this.COLLECTION}/${groupId}`);
     }
   }
 
@@ -130,6 +152,48 @@ export class GroupService {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `${this.COLLECTION}/${groupId}`);
     }
+  }
+
+  static subscribeToGroupsAsLeader(callback: (groups: Group[]) => void) {
+    const user = auth.currentUser;
+    if (!user) return () => {};
+
+    const q = query(
+      collection(db, this.COLLECTION),
+      where("liderId", "==", user.uid)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const groups = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Group[];
+      callback(groups);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, this.COLLECTION);
+    });
+  }
+
+  static subscribeToGroupsAsMember(callback: (groups: Group[]) => void) {
+    const user = auth.currentUser;
+    if (!user) return () => {};
+
+    const q = query(
+      collection(db, this.COLLECTION),
+      where("membros", "array-contains", user.uid)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const groups = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Group[];
+      // Filter out groups where the user is the leader if we want strictly "member" view, 
+      // but usually "member" includes leader too. The prompt says "Meus Grupos (Membro): ID do usuário está na lista de membros".
+      callback(groups);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, this.COLLECTION);
+    });
   }
 
   static subscribeToUserGroups(callback: (groups: Group[]) => void) {

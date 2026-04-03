@@ -8,7 +8,7 @@ import {
   ArrowLeft, MessageCircle, BookOpen, Send, 
   Bold, Italic, Palette, Save, CheckCircle2, Loader2,
   Sparkles, Heart, Share2, MoreVertical, List, Highlighter,
-  CheckCircle
+  CheckCircle, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -26,6 +26,8 @@ export default function PostDetailPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [togglingCompletion, setTogglingCompletion] = useState(false);
   const [activeTab, setActiveTab] = useState<'community' | 'journal'>('community');
+  const [nextPost, setNextPost] = useState<{ groupId: string; dayId: string; postId: string } | null>(null);
+  const [showNextStepBanner, setShowNextStepBanner] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -44,6 +46,12 @@ export default function PostDetailPage() {
     }
   }, [groupId, dayId, postId]);
 
+  useEffect(() => {
+    if (groupId && postId) {
+      PostService.getNextPost(groupId, postId).then(setNextPost);
+    }
+  }, [groupId, postId]);
+
   const handleToggleCompletion = async () => {
     if (!groupId || !postId || togglingCompletion) return;
     
@@ -57,6 +65,9 @@ export default function PostDetailPage() {
           origin: { y: 0.6 },
           colors: ['#00E5FF', '#1e293b', '#ffffff']
         });
+        if (nextPost) {
+          setShowNextStepBanner(true);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -102,7 +113,18 @@ export default function PostDetailPage() {
           >
             <ArrowLeft className="w-6 h-6 text-slate-600" />
           </button>
-          <h1 className="text-lg font-bold text-slate-800">Detalhes da Postagem</h1>
+          <h1 className="text-lg font-bold text-slate-800 flex-1">Detalhes da Postagem</h1>
+          
+          {nextPost && (
+            <button 
+              onClick={() => navigate(`/groups/${nextPost.groupId}/days/${nextPost.dayId}/posts/${nextPost.postId}`)}
+              className="p-3.5 bg-cyan-50 text-cyan-600 rounded-xl hover:bg-cyan-100 transition-all flex items-center gap-2 font-bold text-xs"
+              title="Próximo Estudo"
+            >
+              <span className="hidden sm:inline">Próximo</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Post Content (Instagram Style) */}
@@ -181,7 +203,7 @@ export default function PostDetailPage() {
               <Share2 className="w-6 h-6 text-slate-300 ml-auto" />
             </div>
 
-            <div className="pt-4">
+            <div className="pt-4 space-y-3">
               <button
                 onClick={handleToggleCompletion}
                 disabled={togglingCompletion}
@@ -202,6 +224,15 @@ export default function PostDetailPage() {
                   "Marcar como Concluído"
                 )}
               </button>
+
+              {isCompleted && nextPost && (
+                <button 
+                  onClick={() => navigate(`/groups/${nextPost.groupId}/days/${nextPost.dayId}/posts/${nextPost.postId}`)}
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-xl"
+                >
+                  Próximo Estudo <ArrowRight className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -266,6 +297,47 @@ export default function PostDetailPage() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Next Step Banner */}
+        <AnimatePresence>
+          {showNextStepBanner && nextPost && (
+            <motion.div 
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              className="fixed bottom-24 left-4 right-4 z-50"
+            >
+              <div className="bg-slate-900 text-white p-6 rounded-[2rem] shadow-2xl border border-slate-800 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-cyan-500/20 text-cyan-400 rounded-2xl flex items-center justify-center">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm">Excelente!</h4>
+                    <p className="text-xs text-slate-400">Vamos para o próximo estudo?</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowNextStepBanner(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                  >
+                    Agora não
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowNextStepBanner(false);
+                      navigate(`/groups/${nextPost.groupId}/days/${nextPost.dayId}/posts/${nextPost.postId}`);
+                    }}
+                    className="px-6 py-2 bg-cyan-500 text-white rounded-xl font-bold text-xs hover:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </MainLayout>
   );
