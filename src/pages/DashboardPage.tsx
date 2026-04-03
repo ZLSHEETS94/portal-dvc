@@ -42,10 +42,22 @@ export default function DashboardPage() {
   const [showOnlyPending, setShowOnlyPending] = useState(false);
   const navigate = useNavigate();
 
-  const user = auth.currentUser;
+  const [user, setUser] = useState<any>(auth.currentUser);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    const unsub = auth.onAuthStateChanged((u) => {
+      setUser(u);
+      setAuthLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!user || authLoading) {
+      if (!authLoading) setLoading(false);
+      return;
+    }
 
     const unsubMember = GroupService.subscribeToGroupsAsMember((groups) => {
       setMemberGroups(groups);
@@ -178,11 +190,35 @@ export default function DashboardPage() {
 
   const selectedLeaderGroup = leaderGroups.find(g => g.id === selectedLeaderGroupId);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+          <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-3xl flex items-center justify-center">
+            <Users className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-bold text-slate-800">Bem-vindo!</h3>
+            <p className="text-slate-500 max-w-sm mx-auto font-medium">
+              Faça login para acessar seus estudos e grupos.
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate('/login')}
+            className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+          >
+            Fazer Login
+          </button>
         </div>
       </MainLayout>
     );
