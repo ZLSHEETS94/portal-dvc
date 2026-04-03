@@ -4,7 +4,7 @@ import {
   Construction, Sparkles, ArrowRight, BookOpen, Star, 
   Users, LayoutDashboard, Settings, Plus, LogOut, 
   ChevronRight, CheckCircle2, Clock, Trophy, TrendingUp,
-  UserPlus, MessageSquare, Edit3, Filter, ShieldAlert
+  UserPlus, MessageSquare, Edit3, Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth, db } from '../firebase';
@@ -101,12 +101,6 @@ export default function DashboardPage() {
         const groupDoc = await getDoc(doc(db, "groups", selectedLeaderGroupId));
         if (!groupDoc.exists()) return;
         const groupData = groupDoc.data() as Group;
-
-        // SECURITY: Verify if user is indeed the leader
-        if (groupData.liderId !== user.uid) {
-          setActiveTab('estudos');
-          return;
-        }
 
         // Fetch pending requests profiles
         if (groupData.solicitacoes && groupData.solicitacoes.length > 0) {
@@ -229,30 +223,7 @@ export default function DashboardPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'gestao' && leaderGroups.length === 0 ? (
-            <motion.div
-              key="no-leader"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-20 text-center space-y-6"
-            >
-              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center">
-                <ShieldAlert className="w-10 h-10" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-slate-800">Acesso Restrito</h3>
-                <p className="text-slate-500 max-w-sm mx-auto font-medium">
-                  Você não possui permissões de líder para acessar esta área.
-                </p>
-              </div>
-              <button 
-                onClick={() => setActiveTab('estudos')}
-                className="text-cyan-500 font-bold hover:underline"
-              >
-                Voltar para Meus Estudos
-              </button>
-            </motion.div>
-          ) : activeTab === 'estudos' ? (
+          {activeTab === 'estudos' ? (
             <motion.div
               key="estudos"
               initial={{ opacity: 0, y: 10 }}
