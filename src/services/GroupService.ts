@@ -155,7 +155,7 @@ export class GroupService {
     }
   }
 
-  static subscribeToGroupsAsLeader(callback: (groups: Group[]) => void) {
+  static subscribeToGroupsAsLeader(callback: (groups: Group[]) => void, onError?: (error: any) => void) {
     const user = auth.currentUser;
     if (!user) return () => {};
 
@@ -172,10 +172,11 @@ export class GroupService {
       callback(groups);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, this.COLLECTION);
+      if (onError) onError(error);
     });
   }
 
-  static subscribeToGroupsAsMember(callback: (groups: Group[]) => void) {
+  static subscribeToGroupsAsMember(callback: (groups: Group[]) => void, onError?: (error: any) => void) {
     const user = auth.currentUser;
     if (!user) return () => {};
 
@@ -194,10 +195,11 @@ export class GroupService {
       callback(groups);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, this.COLLECTION);
+      if (onError) onError(error);
     });
   }
 
-  static subscribeToUserGroups(callback: (groups: Group[]) => void) {
+  static subscribeToUserGroups(callback: (groups: Group[]) => void, onError?: (error: any) => void) {
     const user = auth.currentUser;
     if (!user) return () => {};
 
@@ -217,10 +219,11 @@ export class GroupService {
       callback(groups);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, this.COLLECTION);
+      if (onError) onError(error);
     });
   }
 
-  static subscribeToGroup(groupId: string, callback: (group: Group | null) => void) {
+  static subscribeToGroup(groupId: string, callback: (group: Group | null) => void, onError?: (error: any) => void) {
     return onSnapshot(doc(db, this.COLLECTION, groupId), (doc) => {
       if (doc.exists()) {
         callback({ id: doc.id, ...doc.data() } as Group);
@@ -229,6 +232,7 @@ export class GroupService {
       }
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, `${this.COLLECTION}/${groupId}`);
+      if (onError) onError(error);
     });
   }
 

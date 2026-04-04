@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../services/AuthService';
+import { auth } from '../firebase';
 import { LOGO_URL } from '../types';
 import { Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -15,18 +16,34 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkRedirect = async () => {
+    let unsub: (() => void) | null = null;
+    
+    const checkAuth = async () => {
+      // 1. Check for redirect result first
       try {
         const user = await AuthService.handleRedirectResult();
         if (user) {
           navigate('/dashboard');
+          return;
         }
       } catch (err: any) {
         console.error('Redirect result error:', err);
         setError(`Erro no login: ${err.message || 'Erro desconhecido'}`);
       }
+
+      // 2. If no redirect result, check if user is already logged in
+      unsub = auth.onAuthStateChanged((user) => {
+        if (user) {
+          navigate('/dashboard');
+        }
+      });
     };
-    checkRedirect();
+    
+    checkAuth();
+    
+    return () => {
+      if (unsub) unsub();
+    };
   }, [navigate]);
 
   const getFriendlyErrorMessage = (code: string) => {

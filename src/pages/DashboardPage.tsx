@@ -43,7 +43,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const [user, setUser] = useState<any>(auth.currentUser);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(!auth.currentUser);
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((u) => {
@@ -62,6 +62,9 @@ export default function DashboardPage() {
     const unsubMember = GroupService.subscribeToGroupsAsMember((groups) => {
       setMemberGroups(groups);
       setLoading(false);
+    }, (error) => {
+      console.error("Error subscribing to member groups:", error);
+      setLoading(false);
     });
 
     const unsubLeader = GroupService.subscribeToGroupsAsLeader((groups) => {
@@ -69,6 +72,8 @@ export default function DashboardPage() {
       if (groups.length > 0 && !selectedLeaderGroupId) {
         setSelectedLeaderGroupId(groups[0].id);
       }
+    }, (error) => {
+      console.error("Error subscribing to leader groups:", error);
     });
 
     // Fetch uncompleted posts
@@ -190,35 +195,11 @@ export default function DashboardPage() {
 
   const selectedLeaderGroup = leaderGroups.find(g => g.id === selectedLeaderGroupId);
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (!user) {
-    return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-          <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-3xl flex items-center justify-center">
-            <Users className="w-10 h-10" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-slate-800">Bem-vindo!</h3>
-            <p className="text-slate-500 max-w-sm mx-auto font-medium">
-              Faça login para acessar seus estudos e grupos.
-            </p>
-          </div>
-          <button 
-            onClick={() => navigate('/login')}
-            className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-          >
-            Fazer Login
-          </button>
         </div>
       </MainLayout>
     );

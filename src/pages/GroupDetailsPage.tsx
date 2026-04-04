@@ -83,6 +83,9 @@ export default function GroupDetailsPage() {
       }
       setGroup(data);
       setLoading(false);
+    }, (error) => {
+      console.error("Error subscribing to group:", error);
+      setLoading(false);
     });
 
     const unsubDays = DayService.subscribeToDays(id, (data) => {

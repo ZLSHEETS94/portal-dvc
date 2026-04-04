@@ -82,30 +82,6 @@ export default function ProfilePage() {
     );
   }
 
-  if (!auth.currentUser) {
-    return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-          <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-3xl flex items-center justify-center">
-            <UserIcon className="w-10 h-10" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-slate-800">Acesso Restrito</h3>
-            <p className="text-slate-500 max-w-sm mx-auto font-medium">
-              Faça login para visualizar e editar seu perfil.
-            </p>
-          </div>
-          <button 
-            onClick={() => window.location.href = '/login'}
-            className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-          >
-            Fazer Login
-          </button>
-        </div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto space-y-8">

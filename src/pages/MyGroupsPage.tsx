@@ -28,6 +28,9 @@ export default function MyGroupsPage() {
     const unsubscribe = GroupService.subscribeToUserGroups((data) => {
       setGroups(data);
       setLoading(false);
+    }, (error) => {
+      console.error("Error subscribing to user groups:", error);
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
