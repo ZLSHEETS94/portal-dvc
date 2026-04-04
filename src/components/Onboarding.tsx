@@ -4,7 +4,7 @@ import { BookOpen, CheckCircle2, Share2, X, ChevronRight, ChevronLeft } from 'lu
 import { cn } from '../lib/utils';
 
 interface OnboardingProps {
-  onClose: () => void;
+  onClose: (dontShowAgain: boolean) => void;
 }
 
 const slides = [
@@ -33,12 +33,13 @@ const slides = [
 
 export function Onboarding({ onClose }: OnboardingProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(prev => prev + 1);
     } else {
-      onClose();
+      onClose(dontShowAgain);
     }
   };
 
@@ -55,7 +56,7 @@ export function Onboarding({ onClose }: OnboardingProps) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
-        onClick={onClose}
+        onClick={() => onClose(dontShowAgain)}
       />
       
       <motion.div
@@ -65,7 +66,7 @@ export function Onboarding({ onClose }: OnboardingProps) {
         className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden"
       >
         <button 
-          onClick={onClose}
+          onClick={() => onClose(dontShowAgain)}
           className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition-colors z-10"
         >
           <X className="w-6 h-6 text-slate-400" />
@@ -112,24 +113,42 @@ export function Onboarding({ onClose }: OnboardingProps) {
             ))}
           </div>
 
-          <div className="flex items-center justify-between pt-4">
-            <button
-              onClick={prevSlide}
-              disabled={currentSlide === 0}
-              className={cn(
-                "flex items-center gap-2 font-bold text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-0",
-              )}
-            >
-              <ChevronLeft className="w-5 h-5" /> Anterior
-            </button>
-            
-            <button
-              onClick={nextSlide}
-              className="bg-cyan-400 text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-100 flex items-center gap-2 group"
-            >
-              {currentSlide === slides.length - 1 ? "Começar agora" : "Próximo"}
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+          <div className="flex flex-col gap-6">
+            <label className="flex items-center justify-center gap-3 cursor-pointer group">
+              <div className="relative flex items-center justify-center">
+                <input 
+                  type="checkbox" 
+                  className="peer sr-only"
+                  checked={dontShowAgain}
+                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                />
+                <div className="w-6 h-6 border-2 border-slate-200 rounded-lg peer-checked:bg-cyan-400 peer-checked:border-cyan-400 transition-all" />
+                <CheckCircle2 className="absolute w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+              </div>
+              <span className="text-sm font-bold text-slate-500 group-hover:text-slate-700 transition-colors">
+                Não exibir novamente neste grupo
+              </span>
+            </label>
+
+            <div className="flex items-center justify-between pt-4">
+              <button
+                onClick={prevSlide}
+                disabled={currentSlide === 0}
+                className={cn(
+                  "flex items-center gap-2 font-bold text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-0",
+                )}
+              >
+                <ChevronLeft className="w-5 h-5" /> Anterior
+              </button>
+              
+              <button
+                onClick={nextSlide}
+                className="bg-cyan-400 text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-100 flex items-center gap-2 group"
+              >
+                {currentSlide === slides.length - 1 ? "Começar agora" : "Próximo"}
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>

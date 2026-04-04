@@ -281,7 +281,7 @@ function JoinModal({ onClose }: { onClose: () => void }) {
     setError(null);
     try {
       const groupName = await GroupService.joinGroup(code.trim());
-      alert(`Bem-vindo ao grupo ${groupName}!`);
+      alert(`Solicitação enviada para o grupo ${groupName}! Aguarde a aprovação do líder.`);
       onClose();
     } catch (err: any) {
       setError(err.message || 'Erro ao entrar no grupo.');

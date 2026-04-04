@@ -13,7 +13,7 @@ import {
   Settings, Sparkles, MessageSquare, Shield,
   CheckCircle2, XCircle, Copy, Check, Clock, Save,
   Heart, MessageCircle, Send, BookOpen, Mic, Video, Link as LinkIcon, Upload, List,
-  Trophy, CheckCircle
+  Trophy, CheckCircle, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -123,8 +123,8 @@ export default function GroupDetailsPage() {
     return () => unsubPosts();
   }, [id, selectedDayId]);
 
-  const handleCloseOnboarding = () => {
-    if (id) {
+  const handleCloseOnboarding = (dontShowAgain: boolean) => {
+    if (id && dontShowAgain) {
       localStorage.setItem(`hasSeenOnboarding_${id}`, 'true');
     }
     setShowOnboarding(false);
@@ -556,6 +556,22 @@ export default function GroupDetailsPage() {
                     </h3>
                   </div>
                   <div className="divide-y divide-slate-50">
+                    {isLider && group.solicitacoes && group.solicitacoes.length > 0 && (
+                      <div className="bg-amber-50/30">
+                        <div className="p-4 border-b border-amber-100">
+                          <p className="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                            <Sparkles className="w-3 h-3" /> Solicitações Pendentes ({group.solicitacoes.length})
+                          </p>
+                        </div>
+                        {group.solicitacoes.map((uid) => (
+                          <RequestListItem 
+                            key={uid} 
+                            uid={uid} 
+                            groupId={group.id} 
+                          />
+                        ))}
+                      </div>
+                    )}
                     {group.membros.map((uid) => (
                       <MemberListItem 
                         key={uid} 
@@ -707,8 +723,10 @@ function AddPostModal({ groupId, dayId, groupName, onClose }: { groupId: string;
   const [step, setStep] = useState<'select' | 'form'>('select');
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdPostId, setCreatedPostId] = useState<string | null>(null);
-  const [type, setType] = useState<"audio" | "pdf" | "video" | "texto">('texto');
+  const [type, setType] = useState<"audio" | "pdf" | "video" | "texto" | "link">('texto');
   const [texto, setTexto] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
   const [livro, setLivro] = useState('');
   const [capitulo, setCapitulo] = useState('');
   const [versiculo, setVersiculo] = useState('');
@@ -725,6 +743,7 @@ function AddPostModal({ groupId, dayId, groupName, onClose }: { groupId: string;
     { id: 'video', label: 'Vídeo', icon: Video, color: 'text-cyan-600', bg: 'bg-cyan-50' },
     { id: 'pdf', label: 'PDF', icon: FileText, color: 'text-rose-600', bg: 'bg-rose-50' },
     { id: 'texto', label: 'Texto', icon: MessageSquare, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { id: 'link', label: 'Link Externo', icon: LinkIcon, color: 'text-cyan-500', bg: 'bg-cyan-50' },
   ] as const;
 
   const handleSelect = (selectedType: typeof type) => {
@@ -786,6 +805,16 @@ function AddPostModal({ groupId, dayId, groupName, onClose }: { groupId: string;
       if (livro) postData.livro = livro;
       if (capitulo.trim() !== '') postData.capitulo = parseInt(capitulo);
       if (versiculo.trim() !== '') postData.versiculo = parseInt(versiculo);
+
+      if (type === 'link') {
+        if (!linkUrl.startsWith('https://')) {
+          alert('Por segurança, o link deve começar com https://');
+          setLoading(false);
+          return;
+        }
+        postData.url = linkUrl;
+        postData.linkTitle = linkTitle || 'Acessar Conteúdo Externo';
+      }
 
       const newPostId = await PostService.addPost(groupId, dayId, postData);
       console.log("Post criado com sucesso!", newPostId);
@@ -886,6 +915,7 @@ function AddPostModal({ groupId, dayId, groupName, onClose }: { groupId: string;
                         if (type === 'audio') postTitle = "Novo Áudio";
                         else if (type === 'video') postTitle = "Novo Vídeo";
                         else if (type === 'pdf') postTitle = "Novo PDF";
+                        else if (type === 'link') postTitle = linkTitle || "Novo Link";
                         else postTitle = "Nova Reflexão";
                       }
                       PostService.sharePostToWhatsApp(groupName, authorName, postTitle, createdPostId);
@@ -1031,6 +1061,53 @@ function AddPostModal({ groupId, dayId, groupName, onClose }: { groupId: string;
                     Voltar
                   </button>
                 </div>
+              ) : type === 'link' && !linkUrl ? (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-600 px-1">Título do Link (Opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Formulário de Inscrição"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-600 outline-none transition-all font-medium"
+                        value={linkTitle}
+                        onChange={(e) => setLinkTitle(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-600 px-1">URL do Link</label>
+                      <input
+                        type="url"
+                        required
+                        placeholder="https://..."
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-600 outline-none transition-all font-medium"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
+                      O link deve começar obrigatoriamente com https://
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setStep('select')}
+                      className="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition-all text-sm"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!linkUrl.startsWith('https://')}
+                      onClick={() => setTexto('')} // Just to trigger the next step which is the form with text/bible ref
+                      className="flex-[2] bg-cyan-500 text-white font-bold py-3 rounded-2xl hover:bg-cyan-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-xl shadow-cyan-100 text-sm"
+                    >
+                      Continuar <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {type === 'audio' && audioBlob && (
@@ -1099,6 +1176,32 @@ function AddPostModal({ groupId, dayId, groupName, onClose }: { groupId: string;
                         type="button"
                         onClick={() => setPdfFile(null)}
                         className="p-2 text-rose-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {type === 'link' && linkUrl && (
+                    <div className="p-4 bg-cyan-50 rounded-3xl border border-cyan-100 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-cyan-500 text-white rounded-full flex items-center justify-center">
+                          <LinkIcon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-cyan-700">Link Externo</p>
+                          <p className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest truncate max-w-[150px]">
+                            {linkTitle || linkUrl}
+                          </p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setLinkUrl('');
+                          setLinkTitle('');
+                        }}
+                        className="p-2 text-cyan-400 hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -1392,6 +1495,52 @@ function PostCard({ post, groupId, dayId, groupName, isLider, isPinned }: { post
             </div>
           )}
 
+          {post.tipo === 'link' && post.url && (
+            <div className="space-y-4">
+              <div className="p-6 bg-cyan-50/30 rounded-[2rem] border-2 border-cyan-400/30 shadow-inner relative overflow-hidden group hover:border-cyan-400 transition-all">
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <LinkIcon className="w-24 h-24 text-cyan-600" />
+                </div>
+                
+                <div className="flex flex-col items-center text-center space-y-6 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-cyan-100">
+                      <img 
+                        src={`https://www.google.com/s2/favicons?domain=${new URL(post.url).hostname}&sz=64`} 
+                        alt="Favicon" 
+                        className="w-6 h-6"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "";
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                      <LinkIcon className="w-6 h-6 text-cyan-500 absolute" style={{ display: 'none' }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em]">Conteúdo Externo</p>
+                      <p className="text-xs font-bold text-slate-400 truncate max-w-[200px]">{new URL(post.url).hostname}</p>
+                    </div>
+                  </div>
+
+                  <a 
+                    href={post.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // UX Requirement: Mark as completed logic would be here if we had a direct way to trigger it
+                      // For now, opening in new tab as requested
+                    }}
+                    className="w-full bg-cyan-500 text-white font-black py-4 rounded-2xl hover:bg-cyan-600 transition-all flex items-center justify-center gap-3 shadow-lg shadow-cyan-200 group/btn"
+                  >
+                    <ExternalLink className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                    {post.linkTitle || 'Acessar Conteúdo Externo'}
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
           {post.texto_principal && (
             <div className="relative">
               <p className={cn(
@@ -1467,6 +1616,7 @@ function PostCard({ post, groupId, dayId, groupName, isLider, isPinned }: { post
                   if (post.tipo === 'audio') postTitle = "Novo Áudio";
                   else if (post.tipo === 'video') postTitle = "Novo Vídeo";
                   else if (post.tipo === 'pdf') postTitle = "Novo PDF";
+                  else if (post.tipo === 'link') postTitle = post.linkTitle || "Novo Link";
                   else postTitle = "Nova Reflexão";
                 }
                 PostService.sharePostToWhatsApp(groupName, authorName, postTitle, post.id);
@@ -1491,7 +1641,14 @@ function PostCard({ post, groupId, dayId, groupName, isLider, isPinned }: { post
   );
 }
 
-function MemberListItem({ uid, groupId, isLider, liderId }: { uid: string; groupId: string; isLider: boolean; liderId: string; key?: string }) {
+interface MemberListItemProps {
+  uid: string;
+  groupId: string;
+  isLider: boolean;
+  liderId: string;
+}
+
+const MemberListItem: React.FC<MemberListItemProps> = ({ uid, groupId, isLider, liderId }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const isSelf = auth.currentUser?.uid === uid;
@@ -1505,7 +1662,9 @@ function MemberListItem({ uid, groupId, isLider, liderId }: { uid: string; group
   }, [uid]);
 
   const handleRemove = async () => {
-    await GroupService.removeMember(groupId, uid);
+    if (window.confirm('Deseja realmente remover este integrante?')) {
+      await GroupService.removeMember(groupId, uid);
+    }
   };
 
   if (loading) {
@@ -1557,6 +1716,90 @@ function MemberListItem({ uid, groupId, isLider, liderId }: { uid: string; group
           <UserMinus className="w-5 h-5" />
         </button>
       )}
+    </div>
+  );
+}
+
+interface RequestListItemProps {
+  uid: string;
+  groupId: string;
+}
+
+const RequestListItem: React.FC<RequestListItemProps> = ({ uid, groupId }) => {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    FirestoreService.getUserProfile(uid).then(p => {
+      setProfile(p);
+      setLoading(false);
+    });
+  }, [uid]);
+
+  const handleApprove = async () => {
+    setActionLoading(true);
+    try {
+      await GroupService.approveRequest(groupId, uid);
+    } catch (err) {
+      alert('Erro ao aprovar solicitação.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!window.confirm('Deseja recusar esta solicitação?')) return;
+    setActionLoading(true);
+    try {
+      await GroupService.rejectRequest(groupId, uid);
+    } catch (err) {
+      alert('Erro ao recusar solicitação.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) return <div className="p-4 animate-pulse h-20 bg-slate-50/50" />;
+
+  return (
+    <div className="flex items-center justify-between p-4 bg-amber-50/20 hover:bg-amber-50/40 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl overflow-hidden bg-white border-2 border-amber-100 shadow-sm">
+          <img 
+            src={profile?.photoURL || DEFAULT_AVATAR} 
+            alt={profile?.displayName} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div>
+          <p className="font-bold text-slate-800">
+            {profile?.displayName || 'Usuário sem nome'}
+          </p>
+          <p className="text-xs text-amber-600 font-medium">
+            Deseja entrar no grupo
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button 
+          onClick={handleReject}
+          disabled={actionLoading}
+          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-50"
+          title="Recusar"
+        >
+          <XCircle className="w-5 h-5" />
+        </button>
+        <button 
+          onClick={handleApprove}
+          disabled={actionLoading}
+          className="p-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 disabled:opacity-50"
+          title="Aprovar"
+        >
+          {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+        </button>
+      </div>
     </div>
   );
 }

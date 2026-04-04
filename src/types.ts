@@ -32,7 +32,7 @@ export interface CalendarDay {
 
 export interface Post {
   id: string;
-  tipo: "audio" | "pdf" | "video" | "texto";
+  tipo: "audio" | "pdf" | "video" | "texto" | "link";
   autor_id: string;
   autor_nome: string;
   autor_foto: string;
@@ -45,6 +45,8 @@ export interface Post {
   pdf_url?: string;
   pdf_nome?: string;
   pdf_tamanho?: string;
+  url?: string;
+  linkTitle?: string;
   livro?: string;
   capitulo?: number;
   versiculo?: number;
