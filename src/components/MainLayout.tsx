@@ -46,7 +46,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen">
         <div className="p-6">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-indigo-100 flex items-center justify-center bg-white">
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-indigo-100 flex items-center justify-center bg-slate-900">
               <img src={LOGO_URL} alt="Logo" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
             </div>
             <span className="font-bold text-xl text-slate-800 tracking-tight">Portal Devocional</span>
@@ -103,7 +103,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Mobile Nav */}
       <nav className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-white">
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-slate-900">
             <img src={LOGO_URL} alt="Logo" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
           </div>
           <span className="font-bold text-lg text-slate-800">Portal Devocional</span>

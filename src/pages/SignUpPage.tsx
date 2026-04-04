@@ -65,7 +65,9 @@ export default function SignUpPage() {
         className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 space-y-8"
       >
         <div className="text-center">
-          <img src={LOGO_URL} alt="Portal Devocional" className="h-24 mx-auto mb-4" />
+          <div className="w-24 h-24 mx-auto mb-4 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+            <img src={LOGO_URL} alt="Portal Devocional" className="h-16 w-16 object-contain" />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">Criar Conta</h1>
           <p className="text-gray-500 mt-2">Junte-se ao Portal Devocional</p>
         </div>

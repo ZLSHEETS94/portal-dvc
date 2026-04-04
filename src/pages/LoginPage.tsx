@@ -110,7 +110,9 @@ export default function LoginPage() {
         )}
       >
         <div className="text-center">
-          <img src={LOGO_URL} alt="Portal Devocional" className="h-24 mx-auto mb-4" />
+          <div className="w-24 h-24 mx-auto mb-4 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+            <img src={LOGO_URL} alt="Portal Devocional" className="h-16 w-16 object-contain" />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">Bem-vindo de volta</h1>
           <p className="text-gray-500 mt-2">Acesse sua conta para continuar</p>
         </div>

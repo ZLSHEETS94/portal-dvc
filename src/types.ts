@@ -65,5 +65,5 @@ export interface Comment {
 }
 
 export const DEFAULT_AVATAR = "https://png.pngtree.com/png-vector/20250512/ourmid/pngtree-default-avatar-profile-icon-vector-png-image_16213769.png";
-export const LOGO_URL = "https://res.cloudinary.com/dm45ej3sj/image/upload/q_auto/f_auto/v1775234200/favicon_ababpj.png";
+export const LOGO_URL = "https://res.cloudinary.com/dm45ej3sj/image/upload/q_auto/f_auto/v1775324814/logoPODE-brancoOFC_jr2z8m.png";
 export const DEFAULT_GROUP_IMAGE = "https://res.cloudinary.com/dm45ej3sj/image/upload/q_auto/f_auto/v1775168534/group_h8mcjj.png";
